@@ -1,0 +1,1 @@
+Lucide Icons; official https://github.com/lucide-icons/lucide/tree/main/icons ; downloaded 2026-10-23. ISC license in LICENSE. SVG geometry unmodified; runtime stroke recolored for contrast.

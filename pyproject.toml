@@ -1,0 +1,166 @@
+[project]
+name = "tailor"
+version = "2.1.4"
+description = "Explore datasets and fit models."
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "David Fokkema", email = "davidfokkema@icloud.com" }]
+requires-python = ">=3.12"
+dependencies = [
+    "briefcase>=0.3.26",
+    "appdirs>=1.4.4,<2.0.0",
+    "tomli_w>=1.0.0,<2.0.0",
+    "numpy>=2.4.0,<3.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "openpyxl>=3.1,<4",
+    "xlrd>=2.0,<3",
+    "lmfit>=1.0.3,<2.0.0",
+    "scipy>=1.15.0,<2.0.0",
+    "asteval>=0.9.26,<1.0.0",
+    "libcst>=1.2.0,<2.0.0",
+    "pyside6_essentials>=6.6.2,<6.10",
+    "pyqtgraph>=0.13.3",
+    "matplotlib>=3.5.1,<4.0.0",
+    "xxhash>=3.2.0,<4.0.0",
+    "pydantic>=2.1.1,<3.0.0",
+    "click>=8.1.7",
+    "httpx2>=2.2.0",
+    "std-nslog>=2.0.0,<3.0.0; sys_platform == 'darwin'",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/davidfokkema/tailor"
+Documentation = "https://davidfokkema.github.io/tailor/"
+Repository = "https://github.com/davidfokkema/tailor.git"
+Issues = "https://github.com/davidfokkema/tailor/issues"
+Changelog = "https://github.com/davidfokkema/tailor/blob/main/CHANGELOG.md"
+
+[project.scripts]
+tailor = "tailor.app:main"
+
+[build-system]
+requires = ["uv_build>=0.11.2,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.briefcase]
+project_name = "Tailor"
+bundle = "com.amsphyslab"
+
+[tool.briefcase.app.tailor]
+formal_name = "Tailor"
+icon = "src/tailor/resources/tailor"
+sources = ['src/tailor']
+test_sources = ["tests"]
+test_requires = ["pytest", "pytest-mock"]
+
+[tool.briefcase.app.tailor.document_type.project]
+extension = "tlr"
+description = "Tailor project"
+icon = "src/tailor/resources/document_icon"
+url = "https://github.com/davidfokkema/tailor"
+
+[tool.briefcase.app.tailor.macOS]
+min_os_version = "12.0"
+# Don't use Liquid Glass because Qt6 has UI bugs
+info."UIDesignRequiresCompatibility" = true
+requires = []
+# template = "https://github.com/davidfokkema/briefcase-macOS-app-template"
+# template_branch = "file-associations"
+
+[tool.briefcase.app.tailor.linux]
+requires = []
+system_requires = []
+
+[tool.briefcase.app.tailor.windows]
+use_full_install_path = false
+requires = []
+# template = "https://github.com/davidfokkema/briefcase-windows-app-template"
+# template_branch = "file-associations"
+
+# Mobile deployments
+[tool.briefcase.app.tailor.iOS]
+requires = []
+
+[tool.briefcase.app.tailor.android]
+requires = []
+
+[tool.pruner.darwin]
+base_dir = "build/tailor/macos/app/Tailor.app/Contents/Resources/app_packages"
+exclude = [
+    "**/tests",
+    "**/examples",
+    "**/docs",
+    "PySide6/*",
+    "PySide6/Qt/*",
+    "PySide6/Qt/lib/*",
+    "PySide6/Qt/plugins/*",
+]
+include = [
+    "PySide6/*.dylib",
+    "PySide6/__init__.py",
+    "PySide6/QtCore.*",
+    "PySide6/QtGui.*",
+    "PySide6/QtOpenGL.*",
+    "PySide6/QtOpenGLWidgets.*",
+    "PySide6/QtUiTools.*",
+    "PySide6/QtWidgets.*",
+    "PySide6/Qt",
+    "PySide6/Qt/lib",
+    "PySide6/Qt/lib/QtGui.framework",
+    "PySide6/Qt/lib/QtDBus.framework",
+    "PySide6/Qt/lib/QtCore.framework",
+    "PySide6/Qt/lib/QtQml.framework",
+    "PySide6/Qt/lib/QtOpenGL.framework",
+    "PySide6/Qt/lib/QtOpenGLWidgets.framework",
+    "PySide6/Qt/lib/QtUiTools.framework",
+    "PySide6/Qt/lib/QtWidgets.framework",
+    "PySide6/Qt/lib/QtNetwork.framework",
+    "PySide6/Qt/plugins",
+    "PySide6/Qt/plugins/platforms",
+    "PySide6/Qt/plugins/styles",
+]
+
+[tool.pruner.win32]
+base_dir = "build/tailor/windows/app/src/app_packages"
+exclude = [
+    "**/tests",
+    "**/examples",
+    "**/docs",
+    "PySide6/*",
+    "PySide6/plugins/*",
+]
+include = [
+    "PySide6/*.py",
+    "PySide6/qt.conf",
+    "PySide6/pyside6.*",
+    "PySide6/concrt140.dll",
+    "PySide6/opengl32sw.dll",
+    "PySide6/d3d*.dll",
+    "PySide6/ucrtbase.dll",
+    "PySide6/msvc*.dll",
+    "PySide6/vc*.dll",
+    "PySide6/Qt6Core.dll",
+    "PySide6/Qt6Gui.dll",
+    "PySide6/Qt6Network.dll",
+    "PySide6/Qt6OpenGL*.dll",
+    "PySide6/Qt6Qml.dll",
+    "PySide6/Qt6UiTools.dll",
+    "PySide6/Qt6Widgets.dll",
+    "PySide6/QtCore.py*",
+    "PySide6/QtNetwork.py*",
+    "PySide6/QtOpenGL*.py*",
+    "PySide6/QtGui.py*",
+    "PySide6/QtQml.py*",
+    "PySide6/QtUiTools.py*",
+    "PySide6/QtWidgets.py*",
+    "PySide6/plugins",
+    "PySide6/plugins/platforms",
+    "PySide6/plugins/styles",
+]
