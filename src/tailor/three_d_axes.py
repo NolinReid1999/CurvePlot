@@ -119,12 +119,12 @@ def apply(view):
         axis.set_major_formatter(ticker.FuncFormatter(label))
         axis.line.set_color(ink(cfg["color"]))
         axis.line.set_linewidth(cfg["axis_width"])
-        axis.line.set_visible(cfg["visible"])
+        axis.line.set_visible(cfg["visible"] and cfg.get('line_visible', True))
         adapt_projected_ticks(axis,cfg)
         ax.tick_params(
             axis=dim,
             which="major",
-            length=cfg["tick_length"] if cfg["major_visible"] else 0,
+            length=cfg["tick_length"] if cfg["major_visible"] and cfg.get('ticks_visible', True) else 0,
             width=cfg["axis_width"],
             direction=cfg["direction"],
             labelsize=tick["size"],
@@ -133,7 +133,7 @@ def apply(view):
         ax.tick_params(
             axis=dim,
             which="minor",
-            length=cfg["minor_length"] if cfg["minor_visible"] else 0,
+            length=cfg["minor_length"] if cfg["minor_visible"] and cfg.get('ticks_visible', True) else 0,
             direction=cfg["direction"],
         )
         for label in axis.get_ticklabels():
@@ -148,7 +148,7 @@ def apply(view):
             from tailor.axis_text import effective_angle
             label.set_rotation(effective_angle(cfg))
             label.set_rotation_mode('anchor')
-            label.set_visible(cfg["labels"] and cfg["visible"] and cfg["major_visible"])
+            label.set_visible(cfg["labels"] and cfg["visible"])
             label.set_picker(True)
         axis.label.set_picker(True)
         axis._axinfo["grid"].update(
@@ -200,16 +200,16 @@ def apply_colorbar(view, bar):
     bar.ax.tick_params(
         labelsize=tick["size"],
         colors=ink(tick["color"]),
-        length=cfg["tick_length"] if cfg["visible"] and cfg["major_visible"] else 0,
+        length=cfg["tick_length"] if cfg["visible"] and cfg["major_visible"] and cfg.get('ticks_visible', True) else 0,
         direction=cfg["direction"],
     )
     bar.formatter = ticker.FuncFormatter(lambda value, pos: format_value(cfg, value))
     bar.update_ticks()
-    bar.outline.set_visible(cfg["visible"])
+    bar.outline.set_visible(cfg["visible"] and cfg.get('line_visible', True))
     bar.outline.set_edgecolor(ink(cfg["color"]))
     bar.outline.set_linewidth(cfg["axis_width"])
     for label in bar.ax.get_yticklabels():
-        label.set_visible(cfg["labels"] and cfg["visible"] and cfg["major_visible"])
+        label.set_visible(cfg["labels"] and cfg["visible"])
 
 
 def adapt_projected_ticks(axis, cfg):
@@ -239,9 +239,9 @@ def adapt_projected_ticks(axis, cfg):
             norm=np.linalg.norm(vector)
             enabled=settings['major_visible'] if tick._major else settings['minor_visible']
             length=settings['tick_length'] if tick._major else settings['minor_length']
-            line.set_visible(bool(settings['visible'] and enabled and length>0 and norm>1e-12))
+            line.set_visible(bool(settings['visible'] and settings.get('ticks_visible',True) and enabled and length>0 and norm>1e-12))
             tick.tick2line.set_visible(False)
-            tick.label1.set_visible(bool(tick._major and settings['labels'] and settings['visible'] and settings['major_visible']))
+            tick.label1.set_visible(bool(tick._major and settings['labels'] and settings['visible']))
             tick.label2.set_visible(False)
             if norm<=1e-12:continue
             vector=vector/norm

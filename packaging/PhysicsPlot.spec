@@ -1,9 +1,11 @@
 # PyInstaller specification: standalone Apple Silicon trial application.
 from pathlib import Path
+from runpy import run_path
 
 from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 
 project = Path(SPECPATH).parent
+version = run_path(str(project / "src/tailor/version.py"))
 data = collect_data_files("tailor") + copy_metadata("tailor")
 data += [(str(project / "packaging/compiled-native-icons/Assets.car"), "."),
          (str(project / "LICENSE"), "licenses"),
@@ -31,8 +33,8 @@ app = BUNDLE(
     coll, name="Curve.app", icon=str(project / "packaging/compiled-native-icons/CurveIcon.icns"),
     bundle_identifier="local.physicsplot.desktop",
     info_plist={
-        "CFBundleName": "Curve", "CFBundleDisplayName": "Curve", "CFBundleShortVersionString": "1.0.0",
-        "CFBundleVersion": "1", "NSHighResolutionCapable": True,
+        "CFBundleName": "Curve", "CFBundleDisplayName": "Curve", "CFBundleShortVersionString": version["VERSION"],
+        "CFBundleVersion": version["bundle_version"](), "NSHighResolutionCapable": True,
         "UIDesignRequiresCompatibility": True,
         "CFBundleIconName": "CurveIcon",
         "CFBundleDevelopmentRegion": "zh_CN", "CFBundleLocalizations": ["zh-Hans", "en"],

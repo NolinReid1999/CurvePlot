@@ -1,28 +1,37 @@
-# CurvePlot 1.0.0 build1
+# CurvePlot
 
-面向科研的数据整理、绘图、拟合与分析桌面应用。
+面向科研的数据整理、绘图、拟合与分析桌面应用。主开发者：**NolinReid**；开发协作：Codex（OpenAI）。
 
-主开发者：**NolinReid**。开发协作：Codex（OpenAI）。本项目基于 [Tailor](https://github.com/davidfokkema/tailor)，保留 David Fokkema 与贡献者的署名，以 **GPL-3.0-or-later** 分享，详见 [LICENSE](LICENSE) 和 [UPSTREAM.md](UPSTREAM.md)。
+[下载最新版本](https://github.com/NolinReid1999/CurvePlot/releases/latest) · [更新日志](CHANGELOG.md) · [快速开始](docs/QUICK_START.md) · [已知限制](docs/KNOWN_ISSUES.md)
 
-## 功能
+## 功能概览
 
-- CSV / Excel 导入、列角色与名称、表格编辑、排除坏点和撤销。
-- 单曲线、多曲线、左右Y轴、误差棒、坐标轴与智能刻度。
-- 文字、图片及图例编辑、局部放大、断轴。
-- 内置与自定义拟合、Gaussian / Lorentzian 多峰拟合、置信带与预测带。
-- 描述统计、基础数学、平滑校正、区域分析、FFT / 常用滤波、包络及重复测量。
-- 分组 / 堆叠 / 百分比柱图、三维图与组图。
-- 可编辑 `.cur` 工程、多项目及普通图多窗口；PNG / SVG / PDF 导出。
+- **数据表格**：CSV / Excel导入、列角色与名称、单元格编辑、多列操作、坏点排除和撤销。
+- **科研绘图**：单曲线、多曲线、左右Y轴、误差棒、图例、字体与线条偏好；独立调整四个坐标轴及智能刻度。
+- **图形编辑**：文字与图片标注、局部放大、断轴、图形边距和对象位置调整。
+- **数据拟合**：内置与自定义模型、Gaussian / Lorentzian单峰与多峰、初值和参数约束、残差及置信带/预测带。
+- **数据处理**：描述统计、基础数学、平滑校正、区域分析、FFT及常用滤波、SciPy包络、重复测量汇总。
+- **高级绘图**：分组/堆叠/百分比柱状图、三维绘图、组图与子图布局。
+- **工程与导出**：可编辑 `.cur` 工程、多项目、普通图多窗口、自动恢复及 PNG / SVG / PDF 导出。
+- **个性设置**：深浅色外观、默认格式、导出与保存位置、性能选项、诊断日志，以及GitHub正式版本更新检测。
 
-## 下载和安装
+## 最近更新
 
-在本仓库的 Releases 中下载 `Curve-1.0.0-build1-macOS-arm64.dmg`，打开后把 Curve 拖入 Applications。
+**1.0.2 · 2026-11-06**：与1.0.1功能一致，版本号递增，用于验证正式Release更新提示流程；没有新增算法或额外功能。
 
-当前安装包适用于 **Apple Silicon macOS**，采用临时签名，尚未通过 Apple 公证；首次打开可能出现 macOS 安全提示。当前没有 Windows EXE，未验证 Intel Mac / Windows 的发布包。
+**1.0.1 · 2026-11-06**：新增异步联网更新检测；重排轴显示控制，修复零长度刻度残留；补齐部分默认格式的保存与旧配置兼容，并更换更新图标。详见[完整更新日志](CHANGELOG.md)。
 
-## 从源码运行
+## 安装与更新
 
-建议使用 Python 3.12，在此目录执行：
+在[Releases](https://github.com/NolinReid1999/CurvePlot/releases)下载 `Curve-1.0.2-macOS-arm64.dmg`，打开后将Curve拖入Applications。
+
+当前安装包适用于 **Apple Silicon macOS**，采用ad-hoc签名，尚未通过Apple公证；未提供Windows EXE或Intel Mac安装包。
+
+启动后后台检查最新正式Release，每24小时最多自动检查一次；也可在设置或快捷栏手动检查。“稍后提醒”对同一版本静默7天，手动检查不受限制。下载按钮只打开Release页面，**不会自动替换或执行App**。更新功能不发送工程和实验数据。
+
+## 源码运行与构建
+
+建议Python3.12，安装本项目后运行：
 
 ```sh
 python3.12 -m venv .venv
@@ -31,19 +40,10 @@ python -m pip install -e .
 python tools/macos_entry.py
 ```
 
-Windows 的虚拟环境激活命令为 `.venv\Scripts\Activate.ps1`；跨平台源码运行仍需单独验证。启动脚本名称沿用历史文件名，实际调用 Curve 桌面入口。`pyproject.toml` 内的 `tailor 2.1.4` 是上游后端包身份，Curve 界面版本为 **1.0.0 build1**，两者独立。
+macOS构建：`python -m pip install -r requirements-build.txt`，再运行 `python tools/build_macos.py`，输出到 `dist/`，不会自动安装。产品版本只修改 `src/tailor/version.py`；`pyproject.toml`内的Tailor后端包版本与产品版本独立。
 
-## 构建 macOS DMG
+## 说明与许可
 
-```sh
-python -m pip install -r requirements-build.txt
-python tools/build_macos.py
-```
+大数据及高级绘图仍可能有等待，旧手册与部分界面名称存在差异；专项测试不代表所有设备和操作组合均已验收。详见[验证摘要](docs/VALIDATION.md)。
 
-构建使用现有 PyInstaller spec，包含应用图标、手册、拖入 Applications 的背景和链接。构建脚本仅输出到 `dist/` 与 `build/`，不会安装应用。第三方构建依赖见 `pyproject.toml`、`uv.lock` 和 `requirements-build.txt`。
-
-## 本次修复与验证
-
-修复组图刻度区域反复缩放造成的闪烁，以及多窗口恢复局部放大时功能区位置变化引发的异常。必要核心流程及扩大范围复查已完成；扩大复查224项通过，覆盖数值、更多模型/处理、坐标轴联动、高级绘图和重点主题显示。测试范围和性能限制见 [验证摘要](docs/VALIDATION.md) 与 [已知限制](docs/KNOWN_ISSUES.md)，不代表所有操作组合均已验收。
-
-[快速开始](docs/QUICK_START.md) · [更新说明](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md)。仓库附带的旧版手册供参考，部分界面名称与当前版本不同。
+CurvePlot基于 [Tailor](https://github.com/davidfokkema/tailor)，保留David Fokkema及贡献者署名，按 **GPL-3.0-or-later** 开源。参见 [LICENSE](LICENSE)、[UPSTREAM.md](UPSTREAM.md) 和 [上游README](README.upstream.md)。

@@ -5,7 +5,6 @@ from tailor.compact_controls import CheckButton
 import copy
 import json
 import math
-import re
 from dataclasses import asdict
 
 from PySide6 import QtCore, QtWidgets
@@ -35,15 +34,19 @@ GROUPS = {
     "fonts": ("绘图文字", ("font_size", "font_family", "text_styles")),
     "margins": ("图形边距", ()),
     "points": ("选择数据点", ()),
-    "axes": ("四轴显示", ("visible", "title_visible", "labels", "axis_width", "color")),
+    "axes": ("四轴显示", ("visible", "title_visible", "labels", "line_visible",
+                         "ticks_visible", "saved_tick_lengths", "axis_width", "color")),
     "ticks": (
         "主次刻度",
         (
             "major",
+            "major_count",
+            "custom_interval_value",
             "minor",
             "major_visible",
             "minor_visible",
             "minor_count",
+            "minor_auto",
             "tick_length",
             "minor_length",
             "direction",
@@ -51,7 +54,7 @@ GROUPS = {
     ),
     "format": (
         "刻度格式",
-        ("notation", "precision", "divisor", "expression", "prefix", "suffix", "tick_angle"),
+        ("notation", "precision", "precision_follow_interval", "divisor", "expression", "prefix", "suffix", "tick_angle"),
     ),
     "grid": (
         "网格",
@@ -68,6 +71,36 @@ GROUPS = {
     "scales": ("坐标比例", ("log", "inverted")),
     "legend": ("图例外观", ()),
 }
+
+LEGEND_FIELDS = {'columns', 'border', 'background', 'visible', 'spacing',
+                 'border_style', 'background_style'}
+
+
+def legend_defaults(value):
+    """Translate older flat settings to the styles used by the current renderer."""
+    result = {k: copy.deepcopy(v) for k, v in value.items() if k in LEGEND_FIELDS}
+    border = result.get('border_style', {})
+    if isinstance(border, str):
+        border = {'line_style': border}
+    if not isinstance(border, dict):
+        raise ValueError('invalid legend border style')
+    border = dict(border)
+    for old, new in [('border_color', 'color'), ('border_width', 'line_width')]:
+        if old in value:
+            border.setdefault(new, value[old])
+    background = result.get('background_style', {})
+    if not isinstance(background, dict):
+        raise ValueError('invalid legend background style')
+    background = dict(background)
+    for old, new in [('background_color', 'color'), ('background_opacity', 'opacity')]:
+        if old in value:
+            background.setdefault(new, value[old])
+    from tailor.curve_style import CurveStyle
+    for key, spec in [('border_style', border), ('background_style', background)]:
+        if spec:
+            CurveStyle(mode='line', **{k:v for k,v in spec.items() if k != 'mode'})
+            result[key] = spec
+    return result
 
 
 def settings():
@@ -121,6 +154,8 @@ def read(key):
                     if name in value and type(value[name]) is not bool: raise ValueError('invalid toggle')
                 if 'marker_step' in value and type(value['marker_step']) is not int: raise ValueError('invalid marker interval')
             CurveStyle(**candidate)
+            if key == 'fonts' and 'text_styles' in value:
+                value['text_styles'] = candidate['text_styles']
         elif key in {'axes','ticks','format','grid','scales'}:
             from tailor.graph_presentation import GraphPresentation,axis_defaults
             filtered = {}
@@ -128,6 +163,20 @@ def read(key):
                 if axis not in {'x','y','right','top'}: continue
                 if not isinstance(config,dict): raise ValueError('invalid axis defaults')
                 config = {k:v for k,v in config.items() if k in GROUPS[key][1]}
+                for flag in ('line_visible', 'ticks_visible', 'major_visible', 'minor_auto', 'precision_follow_interval'):
+                    if flag in config and type(config[flag]) is not bool:
+                        raise ValueError('invalid default axis toggle')
+                if 'major_count' in config and (type(config['major_count']) is not int or not 2 <= config['major_count'] <= 100):
+                    raise ValueError('invalid default tick count')
+                if 'custom_interval_value' in config:
+                    interval = config['custom_interval_value']
+                    if type(interval) not in (int,float) or not math.isfinite(interval) or interval <= 0:
+                        raise ValueError('invalid default custom interval')
+                if 'saved_tick_lengths' in config:
+                    lengths = config['saved_tick_lengths']
+                    if (not isinstance(lengths,(list,tuple)) or len(lengths) != 2 or
+                            any(type(v) not in (int,float) or not math.isfinite(v) or not 0 <= v <= 20 for v in lengths)):
+                        raise ValueError('invalid default saved tick lengths')
                 GraphPresentation.validate_axis({**axis_defaults(),**config})
                 filtered[axis] = config
             value = filtered
@@ -136,14 +185,12 @@ def read(key):
             if any(type(v) not in (int,float) or not math.isfinite(v) or not 0 <= v <= 300 for v in value.values()):
                 raise ValueError('invalid default margins')
         elif key == 'legend':
-            value = {k:v for k,v in value.items() if k in {'columns','border','background','visible','spacing','border_color','border_width','border_style','background_color','background_opacity'}}
+            value = legend_defaults(value)
             if type(value.get('columns',1)) is not int or not 1 <= value.get('columns',1) <= 20: raise ValueError('invalid legend columns')
-            for name,lo,hi in [('spacing',0,30),('border_width',.1,20),('background_opacity',0,1)]:
+            for name,lo,hi in [('spacing',0,30)]:
                 if name in value and (type(value[name]) not in (int,float) or not math.isfinite(value[name]) or not lo <= value[name] <= hi): raise ValueError('invalid legend size')
             for name in ('border','background','visible'):
                 if name in value and type(value[name]) is not bool: raise ValueError('invalid legend toggle')
-            for name in ('border_color','background_color'):
-                if name in value and (not isinstance(value[name],str) or re.fullmatch(r'#[0-9a-fA-F]{6}',value[name]) is None): raise ValueError('invalid legend colour')
         _invalid_noted.discard(key)
         return value
     except (TypeError, ValueError, KeyError, AttributeError, OverflowError):
@@ -189,23 +236,7 @@ def capture(plot, key):
     if key == "points":
         return bool(plot.point_inspector.enabled.isChecked())
     if key == "legend":
-        return {
-            k: v
-            for k, v in pres.legend.items()
-            if k
-            in {
-                "columns",
-                "border",
-                "background",
-                "visible",
-                "spacing",
-                "border_color",
-                "border_width",
-                "border_style",
-                "background_color",
-                "background_opacity",
-            }
-        }
+        return legend_defaults(pres.legend)
     return {
         axis: {k: config[k] for k in GROUPS[key][1] if k in config}
         for axis, config in pres.axes.items()
@@ -244,6 +275,11 @@ def apply(pres):
         for axis, config in (read(key) or {}).items():
             if axis in pres.axes:
                 pres.axes[axis].update(config)
+    for config in pres.axes.values():
+        if not config.get('ticks_visible', True):
+            if max(config['tick_length'], config['minor_length']) > 0:
+                config.setdefault('saved_tick_lengths', [config['tick_length'], config['minor_length']])
+            config['tick_length'] = config['minor_length'] = 0
     pres.margins.update(read("margins") or {})
     pres.legend.update(read("legend") or {})
 

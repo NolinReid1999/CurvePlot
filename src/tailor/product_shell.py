@@ -57,6 +57,10 @@ class SettingsWindow(QtWidgets.QDialog):
             scroll = QtWidgets.QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
             scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn); scroll.setWidget(page); self.pages.addWidget(scroll)
         side.addWidget(self.categories, 1); root.addWidget(sidebar); root.addWidget(self.pages, 1)
+        from tailor.update_check import check_now
+        self.update_button = QtWidgets.QPushButton("检查更新")
+        self.update_button.clicked.connect(check_now)
+        side.addWidget(self.update_button)
         def filter_pages(text):
             for i in range(self.categories.count()): self.categories.item(i).setHidden(text not in self.categories.item(i).text())
             if self.categories.currentItem() and self.categories.currentItem().isHidden():
@@ -225,6 +229,7 @@ def setup_menus(window):
     action.setShortcut(QtGui.QKeySequence("Ctrl+,"))
     action.triggered.connect(lambda: show_settings())
     window.ui.menuFile.addAction(action)
+    window.ui.menuFile.insertAction(action, window.ui.actionCheck_for_updates)
     window._settings_action = action
     about = window.ui.actionAbout_Tailor
     about.setMenuRole(QtGui.QAction.AboutRole)

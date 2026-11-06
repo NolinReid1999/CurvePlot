@@ -66,7 +66,6 @@ def install(c):
     record[0].layout().removeWidget(old_header);old_header.hide()
     record[0].layout().insertWidget(0,row(header,help_button('主刻度数量是智能刻度的目标个数，实际数量允许略有增减；次刻度数量是每段内部短刻度个数。仅主刻度支持自定义间隔，与数量调节互斥。')))
     header.setText('刻度格式');header.setProperty('sectionTitle','刻度格式');header.setAccessibleName('刻度格式')
-    layout.addWidget(row(c.labels,c.tick_font))
     layout.addWidget(c.tick_pair)
     layout.addWidget(row(c.custom_interval,c.major))
     from tailor.fold_panel import compact

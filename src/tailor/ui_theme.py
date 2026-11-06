@@ -12,6 +12,7 @@ def action_icon(name, widget, color="#637080"):
 
         return icon("settings-2", widget, color)
     paths = {
+        "updates": '<path d="M20 7v5h-5"/><path d="M19.2 12a7.3 7.3 0 1 1-2-5.2L20 10"/>',
         "panels-top-left": '<rect x="2" y="3" width="13" height="11" rx="1"/><rect x="9" y="10" width="13" height="11" rx="1"/>',
         "sheet": '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16"/>',
         "plot": '<path d="M3 3v18h18M6 16l4-5 4 3 4-8 3 3"/>',

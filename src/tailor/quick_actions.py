@@ -107,6 +107,7 @@ class QuickActions(QtWidgets.QWidget):
             ("home", "默认视图 · 显示全部数据"),
             ("save", "保存工程（.cur）"),
             ("export", "快捷导出 PNG / SVG / PDF"),
+            ("updates", "检查更新"),
             ("settings", "设置"),
         ):
             button = QtWidgets.QToolButton(self)
@@ -150,6 +151,8 @@ class QuickActions(QtWidgets.QWidget):
         self.buttons["font"].clicked.connect(lambda: self.open_preferences("font"))
         self.buttons["curve"].clicked.connect(lambda: self.open_preferences("curve"))
         self.buttons["settings"].clicked.connect(self.open_settings)
+        from tailor.update_check import check_now
+        self.buttons["updates"].clicked.connect(check_now)
         self.buttons['inset'].clicked.connect(self.add_inset)
         self.buttons['right_axis'].clicked.connect(self.enable_right_axis)
         self.buttons['range'].clicked.connect(lambda:self.jump('范围与比例'))
@@ -196,6 +199,7 @@ class QuickActions(QtWidgets.QWidget):
             tools_layout.addWidget(self.buttons[key], alignment=QtCore.Qt.AlignHCenter)
         layout.addWidget(self.tools)
         layout.addStretch()
+        layout.addWidget(self.buttons["updates"], alignment=QtCore.Qt.AlignHCenter)
         layout.addWidget(self.buttons["settings"], alignment=QtCore.Qt.AlignHCenter)
         for key,button in self.buttons.items():
             button.setProperty('railSize',32 if key in {'undo','redo','save','export','font','curve','add','delete','hide','down'} else 36)
@@ -256,7 +260,7 @@ class QuickActions(QtWidgets.QWidget):
         if not hasattr(doc,'presentation'):return
         before=copy.deepcopy(doc.presentation.axes['right'])
         enabled=not (before['visible'] and before['title_visible'])
-        doc.presentation.axes['right'].update(visible=enabled,title_visible=enabled)
+        doc.presentation.axes['right'].update(visible=enabled,line_visible=enabled,title_visible=enabled)
         doc.presentation.apply_axes();doc.axis_controls.sync()
         self.sync()
         after=copy.deepcopy(doc.presentation.axes['right'])
@@ -328,7 +332,7 @@ class QuickActions(QtWidgets.QWidget):
         two_dimensional=hasattr(focused,'axis_controls') and hasattr(focused,'preferences') and not getattr(focused,'_inspector_initializing',False) and kind!='3d'
         for key in ('right_axis','range','annotation','position'):self.buttons[key].setEnabled(two_dimensional)
         right=getattr(getattr(focused,'presentation',None),'axes',{}).get('right',{})
-        enabled=bool(right.get('visible') and right.get('title_visible'))
+        enabled=bool(right.get('visible') and right.get('line_visible',True) and right.get('title_visible'))
         with QtCore.QSignalBlocker(self.buttons['right_axis']):
             self.buttons['right_axis'].setChecked(enabled)
         add=getattr(getattr(getattr(focused,'extras',None),'collection',None),'add',None)

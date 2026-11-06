@@ -34,6 +34,8 @@ def axis_defaults():
         "direction": "out",
         "grid": False,
         "visible": True,
+        "line_visible": True,
+        "ticks_visible": True,
         "color": "#202020",
         "minor_count": 4,
         "labels": True,
@@ -207,10 +209,10 @@ class NumberAxis(pg.AxisItem):
         ]
         self._curve_axis_line = (
             QtCore.QRectF(axisSpec[1], axisSpec[2]).normalized().adjusted(-4, -4, 4, 4)
-        )
+        ) if self.settings.get('line_visible', True) else QtCore.QRectF()
         adjusted = []
         for pen, start, end in tickSpecs:
-            if self.style["tickLength"] == 0:
+            if self.style["tickLength"] == 0 or not self.settings.get('ticks_visible', True):
                 continue
             delta = end - start
             length = math.hypot(delta.x(), delta.y())
@@ -232,6 +234,8 @@ class NumberAxis(pg.AxisItem):
                 if abs(length - main) < 0.1
                 else self.settings["minor_length"]
             )
+            if requested <= 0:
+                continue
             sign = -1 if self.orientation in {"top", "left"} else 1
             if self.settings["direction"] == "in":
                 sign *= -1
@@ -252,6 +256,8 @@ class NumberAxis(pg.AxisItem):
             clip_path = frame.mapToItem(self, outline(frame.boundingRect(), frame._curve_outline_kind))
             painter.save()
             painter.setClipPath(clip_path, QtCore.Qt.IntersectClip)
+        if not self.settings.get('line_visible', True):
+            axisSpec = (QtGui.QPen(QtCore.Qt.NoPen), axisSpec[1], axisSpec[2])
         super().drawPicture(painter, axisSpec, adjusted, [])
         if inset_clip:
             # AxisItem records a replacement clip in its cached picture.
@@ -261,7 +267,7 @@ class NumberAxis(pg.AxisItem):
         if self.style['tickFont'] is not None:painter.setFont(self.style['tickFont'])
         from tailor.axis_text import draw
         draw(self,painter,textSpecs)
-        if self.settings.get("break_enabled"):
+        if self.settings.get("break_enabled") and self.settings.get('line_visible', True):
             from tailor.axis_extensions import break_limits
 
             low, _high, gap = break_limits(self.settings)
@@ -858,7 +864,7 @@ class GraphPresentation:
             axis.setStyle(
                 tickLength=(-1 if config["direction"] == "in" else 1)
                 * max(1, math.ceil(max(config["tick_length"], config["minor_length"]))),
-                showValues=config["labels"] and config.get("major_visible",True),
+                showValues=config["labels"],
                 maxTextLevel=2 if config.get("axis_type")=="datetime" else 0,
             )
             axis.setGrid(False)

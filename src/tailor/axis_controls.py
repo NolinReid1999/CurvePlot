@@ -161,7 +161,6 @@ class AxisControls(FoldPanel):
         self.prefix, self.suffix = QtWidgets.QLineEdit(), QtWidgets.QLineEdit()
         self.tick_font = preference_button("font")
         self.tick_font.clicked.connect(lambda: self.open_font("ticks"))
-        form.addWidget(row(self.labels, self.tick_font))
         form.addWidget(row("数字格式", self.notation))
         form.addWidget(row(self.precision_label, self.precision))
         form.addWidget(row("文字前缀", self.prefix, "文字后缀", self.suffix))
@@ -179,8 +178,8 @@ class AxisControls(FoldPanel):
         self.text_editor.hide()
         self.title_font = preference_button("font")
         self.title_font.clicked.connect(lambda: self.open_font("label"))
-        form.addWidget(row(self.title_visible, self.title_font))
-        self.visible = toggle_button("显示坐标轴")
+        self.visible = toggle_button("显示轴线")
+        self.ticks_visible = toggle_button("显示刻度")
         self.color = color_button("#202020", lambda value: self.apply())
         self.color.hide()
         self.axis_width = number(0.1, 20, 1,unit="px")
@@ -189,7 +188,20 @@ class AxisControls(FoldPanel):
         self.axis_stroke.clicked.connect(
             lambda: plot.preferences.open_group_curve("axis", self.current)
         )
-        form.addWidget(row(self.visible, self.axis_stroke))
+        self.tick_stroke = preference_button("curve")
+        self.tick_stroke.clicked.connect(
+            lambda: plot.preferences.open_group_curve("axis", self.current)
+        )
+        grid = QtWidgets.QGridLayout()
+        for index, (button, preference) in enumerate((
+                (self.title_visible, self.title_font), (self.labels, self.tick_font),
+                (self.ticks_visible, self.tick_stroke), (self.visible, self.axis_stroke))):
+            preference.setText("")
+            preference.setFixedWidth(34)
+            grid.addWidget(row(button, preference), index // 2, index % 2)
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+        form.addLayout(grid)
         self.borders = {}
         self.add_section("标题与轴线", form)
         yield
@@ -268,14 +280,14 @@ class AxisControls(FoldPanel):
             self.inverted,
             self.major_visible,
             self.minor_visible,
-            self.labels,
-            self.visible,
-            self.title_visible,
             self.grid,
             self.minor_grid,
             *self.borders.values(),
         ):
             box.toggled.connect(self.apply)
+        for button, key in ((self.labels, 'labels'), (self.title_visible, 'title_visible'),
+                            (self.visible, 'line_visible'), (self.ticks_visible, 'ticks_visible')):
+            button.toggled.connect(lambda checked, key=key: self.set_display(key, checked))
         for box in (
             self.minor_count,
             self.tick_length,
@@ -299,6 +311,24 @@ class AxisControls(FoldPanel):
     def set_direction(self, key):
         self.direction.setCurrentIndex(self.direction.findData(key))
         self.apply()
+
+    def set_display(self, key, checked):
+        if self.loading:
+            return
+        self._pending_display = (key, checked)
+        self.apply()
+
+    def sync_display(self, cfg):
+        for button, key in ((self.visible, 'line_visible'), (self.ticks_visible, 'ticks_visible'),
+                            (self.labels, 'labels'), (self.title_visible, 'title_visible')):
+            checked = cfg['visible'] and cfg.get(key, True)
+            if key == 'ticks_visible':
+                checked = checked and max(cfg['tick_length'], cfg['minor_length']) > 0
+            with QtCore.QSignalBlocker(button):
+                button.setChecked(checked)
+        for key in ('tick_length', 'minor_length'):
+            with QtCore.QSignalBlocker(getattr(self, key)):
+                getattr(self, key).setValue(cfg[key])
 
     def open_font(self, kind):
         self.plot.preferences.clear_group_selection()
@@ -461,11 +491,9 @@ class AxisControls(FoldPanel):
                 "minor_visible",
                 "grid",
                 "minor_grid",
-                "visible",
-                "labels",
-                "title_visible",
             ):
                 getattr(self, name).setChecked(cfg[name])
+            self.sync_display(cfg)
             for name in (
                 "precision",
                 "minor_count",
@@ -636,9 +664,6 @@ class AxisControls(FoldPanel):
                 "minor_visible",
                 "grid",
                 "minor_grid",
-                "visible",
-                "labels",
-                "title_visible",
             ):
                 cfg[name] = getattr(self, name).isChecked()
             for name in (
@@ -652,6 +677,32 @@ class AxisControls(FoldPanel):
                 "minor_grid_count",
             ):
                 cfg[name] = getattr(self, name).value()
+            pending = getattr(self, '_pending_display', None)
+            if pending is not None:
+                del self._pending_display
+                key, enabled = pending
+                if not cfg['visible'] and enabled:
+                    # Inactive legacy axes retain enabled defaults internally.
+                    # Activating one display item must not reveal the other three.
+                    if max(cfg['tick_length'], cfg['minor_length']) > 0:
+                        cfg['saved_tick_lengths'] = [cfg['tick_length'], cfg['minor_length']]
+                    cfg.update(line_visible=False, labels=False, title_visible=False,
+                               ticks_visible=False, tick_length=0, minor_length=0)
+                cfg[key] = enabled
+                cfg['visible'] = cfg['visible'] or enabled
+                if key == 'ticks_visible':
+                    if not enabled:
+                        cfg['saved_tick_lengths'] = [cfg['tick_length'], cfg['minor_length']]
+                        cfg['tick_length'] = cfg['minor_length'] = 0
+                    elif max(cfg['tick_length'], cfg['minor_length']) <= 0:
+                        saved = cfg.get('saved_tick_lengths', [5, 3])
+                        if (not isinstance(saved, (list, tuple)) or len(saved) != 2
+                                or not all(isinstance(v, (int, float)) and 0 <= v <= 30 for v in saved)
+                                or max(saved) <= 0):
+                            saved = [5, 3]
+                        cfg['tick_length'], cfg['minor_length'] = saved
+            elif any(cfg[k] != p.axes[self.current][k] for k in ('tick_length', 'minor_length')):
+                cfg['ticks_visible'] = max(cfg['tick_length'], cfg['minor_length']) > 0
             for name in ("direction", "notation", "grid_style"):
                 cfg[name] = getattr(self, name).currentData()
             for name in ("color", "grid_color", "prefix", "suffix"):
@@ -725,6 +776,7 @@ class AxisControls(FoldPanel):
 
             apply_text_styles(plot)
             plot.main_window.mark_project_dirty()
+            self.sync_display(cfg)
             self.message.hide()
             self.explain()
             from tailor.text_style_controls import record_view_edit

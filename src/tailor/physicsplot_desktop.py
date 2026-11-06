@@ -17,15 +17,9 @@ from tailor.data_model import DataModel
 from tailor.data_sheet import DataSheet
 from tailor.project_actions import ProjectActions
 
-VERSION = "1.0.0"
-BUILD = 1
+from tailor.version import VERSION, BUILD, version_label
 APP_NAME = "Curve"
 FULL_NAME = "CurvePlot"
-
-
-def version_label():
-    """Official releases omit the build suffix; patch trials restart at build1."""
-    return VERSION if BUILD is None else f"{VERSION} build{BUILD}"
 
 
 class CsvReader(QtCore.QThread):
@@ -88,8 +82,8 @@ class PhysicsPlotWindow(ProjectActions, MainWindow):
         self.ui.actionClose.triggered.disconnect()
         self.ui.actionClose.triggered.connect(self.projects.host.hide)
         self.ui.actionAbout_Tailor.setText(f"关于 {APP_NAME}…")
-        # The upstream update action targets Tailor releases, not this build.
-        self.ui.actionCheck_for_updates.setVisible(False)
+        self.ui.actionCheck_for_updates.setText("检查更新…")
+        self.ui.actionCheck_for_updates.setVisible(True)
         self.svg_export_action = QtGui.QAction("导出图形为 SVG…", self)
         self.svg_export_action.triggered.connect(lambda: self.export_graph(".svg"))
         self.ui.menuFile.addAction(self.svg_export_action)
@@ -114,6 +108,10 @@ class PhysicsPlotWindow(ProjectActions, MainWindow):
         self.ui.menuHelp.addAction(bands_help)
         from tailor.recovery import Recovery
         self.recovery = Recovery(self)
+
+    def check_for_updates(self, silent=False):
+        from tailor.update_check import for_application
+        return for_application().check(manual=not silent)
 
     def manual_path(self):
         if getattr(sys, "frozen", False):
@@ -1027,6 +1025,10 @@ def main():
     app.open_pending_files(args.project)
     window = window.projects.active or window
     window.projects.activate(window)
+    if not check_dir:
+        from tailor.update_check import for_application
+        checker = for_application()
+        QtCore.QTimer.singleShot(1500, checker, lambda: checker.check(manual=False))
     if startup_check:
 
         def finish_startup_check():
