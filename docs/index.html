@@ -75,10 +75,6 @@ const featureData=[
 {title:'高效数据处理',desc:'在数据表和绘图区之间无缝衔接，处理原始实验数据。',items:['CSV / Excel 导入','数据截取与筛选','归一化','移动平均与平滑','数值微分','数值积分','峰谷查找','结果写回数据列']},
 {title:'高级科研绘图',desc:'针对论文、报告和实验展示，自由控制每一个绘图细节。',items:['上下左右四边轴','双 X / Y 坐标轴','自定义颜色与线型','精确刻度设置','图例与网格','箭头和文字标注','误差棒 / 多曲线','高清图表导出']}
 ];
-let toastTimer;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3200)}
-document.querySelectorAll('.download-btn').forEach(x=>x.addEventListener('click',()=>toast(x.dataset.platform+' 下载地址尚未配置。正式上线时替换为 GitHub Releases 链接。')));
-document.getElementById('hero-github-btn').onclick=()=>toast('请填写 Curve GitHub 仓库或 Releases 地址。');
-document.getElementById('github-placeholder').onclick=()=>toast('请填写 Curve GitHub 仓库或 Releases 地址。');
 const detail=document.getElementById('feature-detail');document.querySelectorAll('[data-feature]').forEach(b=>b.onclick=()=>{let f=featureData[+b.dataset.feature];document.getElementById('detail-title').textContent=f.title;document.getElementById('detail-desc').textContent=f.desc;document.getElementById('detail-items').innerHTML=f.items.map(item=>'<div class="detail-item">'+item+'</div>').join('');detail.classList.add('open')});document.getElementById('detail-close').onclick=()=>detail.classList.remove('open');
 
 const galleryItems=[
